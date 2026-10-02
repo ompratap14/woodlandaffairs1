@@ -8,7 +8,7 @@
   <meta property="og:title" content="Gallery — Woodland Affairs" />
   <meta property="og:description" content="Every corner, every plate." />
   <meta property="og:image" content="images/amb-hari-tables.jpg" />
-  <link rel="icon" href="favicon.svg" />
+  <link rel="icon" type="image/png" href="favicon.png?v=20261002-wa" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" /><noscript><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" /></noscript>
@@ -30,6 +30,7 @@
     /* Hari Nagar is the lead outlet, followed by Dwarka and Janakpuri. */
     main { display:flex; flex-direction:column; }
     main > .hero { order:0; }
+    .mobile-gallery-video { display:none; }
     main > .gsec:nth-of-type(3) { order:1; }
     main > .gsec:nth-of-type(2) { order:2; }
     main > .gsec:nth-of-type(4) { order:3; }
@@ -43,7 +44,12 @@
     .more-gallery__item img { width:100%; height:100%; object-fit:cover; transition:transform .8s ease, filter .8s ease; }
     .more-gallery__item:hover img { transform:scale(1.06); filter:saturate(1.12); }
     @media (max-width: 860px){ .more-gallery__grid { grid-template-columns:repeat(2,1fr); } }
-    @media (max-width: 480px){ .more-gallery__grid { gap:8px; } }
+    @media (max-width: 760px){
+      .mobile-gallery-video { display:block; order:1; padding:40px 0 0; }
+      .mobile-gallery-video video { width:100%; max-height:75vh; border-radius:var(--radius); background:var(--ink); box-shadow:var(--shadow); }
+      .mobile-gallery-video p { margin-top:14px; color:var(--muted); font-size:14px; }
+      .mobile-gallery-video--inline { padding:0; margin:28px 0 44px; }
+    }    @media (max-width: 480px){ .more-gallery__grid { gap:8px; } }
     @media (max-width: 860px){
       .gitem { grid-template-columns:1fr; gap:22px; }
       .gsec .gitem:nth-child(even) .gitem__media { order:0; }
@@ -89,7 +95,14 @@
         <p class="hero__dek">A wander through our woodland gardens and a look at what comes out of the kitchen — one image at a time.</p>
       </div>
     </section>
-    <section class="gsec branch-story">
+    <section class="mobile-gallery-video" aria-label="Woodland Affairs video">
+      <div class="wrap">
+        <video controls autoplay muted loop playsinline preload="metadata" poster="images/amb-hari-tables.jpg" aria-label="Woodland Affairs gallery video">
+          <source src="hero-video.mp4" type="video/mp4" media="(max-width: 760px)" />
+        </video>
+        <p>A glimpse of Woodland Affairs in motion.</p>
+      </div>
+    </section>    <section class="gsec branch-story">
       <div class="wrap">
         <div class="sec-head" data-reveal>
           <p class="eyebrow">Dwarka · New Delhi</p>
@@ -170,7 +183,7 @@
         </div>
       </div>
     </section>
-    <section class="gsec branch-story">
+<section class="gsec branch-story">
       <div class="wrap">
         <div class="sec-head" data-reveal>
           <p class="eyebrow">Hari Nagar · New Delhi</p>
@@ -267,12 +280,18 @@
         </div>
       </div>
     </section>
-    <section class="gsec branch-story">
+<section class="gsec branch-story">
       <div class="wrap">
         <div class="sec-head" data-reveal>
           <p class="eyebrow">Janakpuri · New Delhi</p>
           <h2 class="display">A little more<br /><em>to discover.</em></h2>
           <p class="lead">Eatery Royale brings the same generous spirit to the heart of Janakpuri.</p>
+        </div>
+        <div class="mobile-gallery-video mobile-gallery-video--inline">
+          <video controls autoplay muted loop playsinline preload="metadata" poster="images/wa-janakpuri.jpg" aria-label="Eatery Royale video">
+            <source src="eatery-royale.mp4" type="video/mp4" media="(max-width: 760px)" />
+          </video>
+          <p>Step inside Eatery Royale.</p>
         </div>
         <div class="gitem" data-reveal>
           <div class="gitem__media"><img srcset="images/wa-janakpuri-480.webp 480w, images/wa-janakpuri.jpg 720w" sizes="(max-width: 760px) 100vw, 50vw" width="720" height="480" decoding="async" loading="lazy" src="images/wa-janakpuri.jpg" alt="A little of everything — kebabs, dips, salad and warm breads on one generous plate." /></div>
