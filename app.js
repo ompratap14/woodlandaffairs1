@@ -1,4 +1,11 @@
 (function () {
+  // Only keyboard interaction should draw a focus ring around the wordmark.
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Tab') document.documentElement.classList.add('keyboard-navigation');
+  }, true);
+  document.addEventListener('pointerdown', function () {
+    document.documentElement.classList.remove('keyboard-navigation');
+  }, true);
   // The table button opens one direct WhatsApp enquiry; there is no booking form or chooser.
   var bookingTriggers = document.querySelectorAll('.fab-call');
   if (bookingTriggers.length && typeof HTMLDialogElement !== 'undefined') {

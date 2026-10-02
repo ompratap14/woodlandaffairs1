@@ -379,3 +379,7 @@ body.intro-active{ overflow:hidden; }
 @media (hover:none) and (pointer:coarse) {
   .nav.solid,.nav.always-solid { background:#0b3320; -webkit-backdrop-filter:none; backdrop-filter:none; }
 }
+
+/* Touch/browser focus restoration must not put a box around the wordmark. */
+.brand:focus { outline:none; }
+.keyboard-navigation .brand:focus-visible { outline:2px solid var(--brass-2); outline-offset:6px; border-radius:2px; }

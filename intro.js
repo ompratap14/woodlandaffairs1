@@ -111,6 +111,7 @@
 
   var skip = intro.querySelector('.intro__skip');
   if (skip) {
+    skip.addEventListener('pointerdown', function () { lastInputKeyboard = false; });
     skip.addEventListener('click', function () { enterSite(true); });
     skip.focus({ preventScroll: true });
     skip.addEventListener('keydown', function (event) {

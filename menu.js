@@ -2,20 +2,24 @@
   const outlets = {
     hari: { name: 'Hari Nagar', phone: '+919873347347', menu: 'https://woodland-affairs.godirekt.in/spark/app/#/mainpage', image: 'images/amb-hari-green.jpg' },
     dwarka: { name: 'Dwarka', phone: '+919873798727', menu: 'https://woodland-affairs-dwarka.godirekt.in/spark/app/#/mainpage', image: 'images/wa-dwarka.jpg' },
-    janakpuri: { name: 'Janakpuri · Eatery Royale', phone: '+919990283002', menu: 'https://eateryroyale.godirekt.in/spark/app/#/mainpage', image: 'images/wa-janakpuri.jpg' }
+    janakpuri: { name: 'Janakpuri · Eatery Royale', phone: '+919990283002', menu: 'https://eateryroyale.godirekt.in/spark/app/#/mainpage', image: 'images/wa-eatery-royale-web.webp' }
   };
   let outlet = 'hari', type = 'carte';
-  let page = 0, turning = false, turnTimer = 0;
+  let page = 0, turning = false;
   let swipe = null;
-  let leafAnimation = null;
+  let leafAnimation = null, activeTurn = null, dragFrame = 0;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const results = document.getElementById('menu-results');
+  function sheetMarkup(pageNumber) {
+    const pages = window.woodlandMenus[outlet];
+    const [heading, dishes] = pages[pageNumber];
+    return `<div class="book-page-top"><span class="notebook__eyebrow">${outlets[outlet].name} · À la carte</span><span class="book-chapter-number" aria-hidden="true">${String(pageNumber + 1).padStart(2, '0')}</span></div><h3>${heading}</h3><div class="book-divider" aria-hidden="true">✦</div><ul>${dishes.map((dish, index) => `<li><span class="book-dish-number" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span><span>${dish}</span></li>`).join('')}</ul><span class="notebook__folio">WOODLAND AFFAIRS <span>${String(pageNumber + 1).padStart(2, '0')} / ${String(pages.length).padStart(2, '0')}</span></span>`;
+  }
   function notebookPage() {
     const pages = window.woodlandMenus[outlet];
-    const [heading, dishes] = pages[page];
-    const sheet = results.querySelector('.notebook__sheet');
+    const sheet = results.querySelector('.notebook > .notebook__sheet');
     if (!sheet) return;
-    sheet.innerHTML = `<div class="book-page-top"><span class="notebook__eyebrow">${outlets[outlet].name} · À la carte</span><span class="book-chapter-number" aria-hidden="true">${String(page + 1).padStart(2, '0')}</span></div><h3>${heading}</h3><div class="book-divider" aria-hidden="true">✦</div><ul>${dishes.map((dish, index) => `<li><span class="book-dish-number" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span><span>${dish}</span></li>`).join('')}</ul><span class="notebook__folio">WOODLAND AFFAIRS <span>${String(page + 1).padStart(2, '0')} / ${String(pages.length).padStart(2, '0')}</span></span>`;
+    sheet.innerHTML = sheetMarkup(page);
     sheet.scrollTop = 0;
     results.querySelector('[data-page="prev"]').disabled = page === 0;
     results.querySelector('[data-page="next"]').disabled = page === pages.length - 1;
@@ -24,57 +28,95 @@
       button.setAttribute('aria-pressed', String(Number(button.dataset.chapter) === page));
     });
   }
-  function turnPage(direction, target) {
-    const next = target === undefined ? page + direction : target;
-    if (turning || next < 0 || next >= window.woodlandMenus[outlet].length) return;
-    if (reduceMotion.matches) { page = next; notebookPage(); return; }
-    turning = true;
-    const sheet = results.querySelector('.notebook__sheet');
-    const previousHTML = sheet.innerHTML;
-    const previousScroll = sheet.scrollTop;
-    const startAngle = parseFloat(sheet.style.getPropertyValue('--turn-start')) || 0;
-    const front = sheet.cloneNode(true);
-    page = next;
-    notebookPage();
-    if (direction < 0) {
-      front.innerHTML = sheet.innerHTML;
-      sheet.innerHTML = previousHTML;
-      sheet.scrollTop = previousScroll;
+  function turnAngle(turn, progress) {
+    return turn.direction > 0 ? -180 * progress : -180 * (1 - progress);
+  }
+  function paintTurn(turn) {
+    turn.leaf.style.transform = `rotateY(${turnAngle(turn, turn.progress)}deg)`;
+    turn.shadow.style.opacity = String(Math.sin(turn.progress * Math.PI) * .22);
+  }
+  function cancelTurn() {
+    cancelAnimationFrame(dragFrame);
+    dragFrame = 0;
+    if (leafAnimation) { leafAnimation.cancel(); leafAnimation = null; }
+    if (activeTurn) {
+      activeTurn.sheet.innerHTML = activeTurn.original;
+      activeTurn.sheet.scrollTop = activeTurn.scroll;
+      activeTurn.sheet.removeAttribute('aria-busy');
+      activeTurn.leaf.remove();
+      activeTurn.shadow.remove();
+      activeTurn = null;
     }
+    swipe = null;
+    turning = false;
+  }
+  function beginTurn(direction, next) {
+    if (turning || next === page || next < 0 || next >= window.woodlandMenus[outlet].length) return null;
+    const sheet = results.querySelector('.notebook > .notebook__sheet');
+    const original = sheet.innerHTML, scroll = sheet.scrollTop;
+    // Measure once before modifying the page; dragging only updates transforms.
+    const geometry = `left:${sheet.offsetLeft}px;top:${sheet.offsetTop}px;width:${sheet.offsetWidth}px;height:${sheet.offsetHeight}px`;
+    const front = sheet.cloneNode(true);
     front.removeAttribute('aria-live');
     front.className = 'notebook__sheet book-leaf-front';
-    front.style.removeProperty('--turn-start');
+    if (direction > 0) { sheet.innerHTML = sheetMarkup(next); sheet.scrollTop = 0; }
+    else front.innerHTML = sheetMarkup(next);
     const leaf = document.createElement('div');
     leaf.className = 'book-turn-leaf';
     leaf.setAttribute('aria-hidden', 'true');
-    leaf.style.cssText = `left:${sheet.offsetLeft}px;top:${sheet.offsetTop}px;width:${sheet.offsetWidth}px;height:${sheet.offsetHeight}px`;
+    leaf.style.cssText = geometry;
     const back = document.createElement('div');
     back.className = 'book-leaf-back';
+    const shadow = document.createElement('div');
+    shadow.className = 'book-page-shadow';
+    shadow.setAttribute('aria-hidden', 'true');
+    shadow.style.cssText = geometry;
     leaf.append(front, back);
-    sheet.parentElement.appendChild(leaf);
-    front.scrollTop = direction > 0 ? previousScroll : 0;
-    sheet.style.removeProperty('--turn-start');
-    const animation = leaf.animate([
-      { transform:`rotateY(${direction > 0 ? Math.min(0, startAngle) : -180}deg)` },
-      { transform:`rotateY(${direction > 0 ? -180 : 0}deg)` }
-    ], { duration:900, easing:'cubic-bezier(.22,.65,.18,1)', fill:'forwards' });
+    sheet.parentElement.append(shadow, leaf);
+    front.scrollTop = direction > 0 ? scroll : 0;
+    sheet.setAttribute('aria-busy', 'true');
+    turning = true;
+    activeTurn = {sheet, original, scroll, leaf, shadow, direction, next, progress:0};
+    paintTurn(activeTurn);
+    return activeTurn;
+  }
+  function settleTurn(commit) {
+    const turn = activeTurn;
+    if (!turn) return;
+    cancelAnimationFrame(dragFrame);
+    dragFrame = 0;
+    const end = commit ? 1 : 0;
+    const duration = reduceMotion.matches ? 0 : Math.max(180, Math.abs(end - turn.progress) * 620);
+    paintTurn(turn);
+    const animation = turn.leaf.animate([
+      {transform:`rotateY(${turnAngle(turn, turn.progress)}deg)`},
+      {transform:`rotateY(${turnAngle(turn, end)}deg)`}
+    ], {duration, easing:'cubic-bezier(.2,.7,.2,1)', fill:'forwards'});
+    turn.shadow.style.transition = `opacity ${duration}ms ease-out`;
+    turn.shadow.style.opacity = '0';
     leafAnimation = animation;
     animation.finished.then(() => {
-      if (!leaf.isConnected) return;
-      notebookPage();
-      leaf.remove();
-      leafAnimation = null;
+      if (activeTurn !== turn) return;
+      if (commit) { page = turn.next; notebookPage(); }
+      else { turn.sheet.innerHTML = turn.original; turn.sheet.scrollTop = turn.scroll; }
+      turn.sheet.removeAttribute('aria-busy');
+      turn.leaf.remove();
+      turn.shadow.remove();
+      activeTurn = leafAnimation = null;
       turning = false;
-    }).catch(() => { leaf.remove(); });
+    }).catch(() => {});
+  }
+  function turnPage(direction, target) {
+    const next = target === undefined ? page + direction : target;
+    if (turning || next === page || next < 0 || next >= window.woodlandMenus[outlet].length) return;
+    if (reduceMotion.matches) { page = next; notebookPage(); return; }
+    if (beginTurn(direction, next)) settleTurn(true);
   }
   function buffetCard(menu, index) {
     return `<details class="buffet-card" ${index === 0 ? 'open' : ''}><summary><span class="buffet-card__number">${String(index + 1).padStart(2, '0')}</span><span class="buffet-card__identity"><strong>${menu.title}</strong><small>${menu.terms}</small></span><span class="buffet-card__toggle" aria-hidden="true">+</span></summary><div class="buffet-card__body">${menu.sections.map(([name, items]) => `<section><h4>${name}</h4><p>${items}</p></section>`).join('')}</div></details>`;
   }
   function render() {
-    if (leafAnimation) { leafAnimation.cancel(); leafAnimation = null; }
-    clearTimeout(turnTimer);
-    turning = false;
-    swipe = null;
+    cancelTurn();
     const selected = outlets[outlet];
     let body;
     if (type === 'carte') {
@@ -116,37 +158,51 @@
     }
   });
   results.addEventListener('touchstart', event => {
-    const sheet = event.target.closest('.notebook__sheet');
-    if (!sheet || turning || event.touches.length !== 1) return;
-    swipe = { sheet, x:event.touches[0].clientX, y:event.touches[0].clientY, dragging:false };
-  }, { passive:true });
+    if (event.touches.length !== 1) { if (activeTurn) settleTurn(false); swipe = null; return; }
+    const sheet = event.target.closest('.notebook > .notebook__sheet');
+    if (!sheet || turning) return;
+    const touch = event.touches[0];
+    swipe = {sheet, x:touch.clientX, y:touch.clientY, width:sheet.clientWidth,
+      lastX:touch.clientX, lastTime:performance.now(), velocity:0, direction:0, progress:0};
+  }, {passive:true});
   results.addEventListener('touchmove', event => {
-    if (!swipe || event.touches.length !== 1) return;
-    const dx = event.touches[0].clientX - swipe.x;
-    const dy = event.touches[0].clientY - swipe.y;
-    if (!swipe.dragging && Math.abs(dy) > 18 && Math.abs(dy) > Math.abs(dx) * 1.2) { swipe = null; return; }
-    if (Math.abs(dx) < 8) return;
-    const direction = dx < 0 ? 1 : -1;
-    if (page + direction < 0 || page + direction >= window.woodlandMenus[outlet].length) return;
-    event.preventDefault();
-    swipe.dragging = true;
-    swipe.sheet.classList.add('is-dragging');
-    swipe.sheet.style.setProperty('--drag', String(Math.max(-0.8, Math.min(0.8, dx / swipe.sheet.clientWidth))));
-  }, { passive:false });
+    if (!swipe) return;
+    if (event.touches.length !== 1) { if (activeTurn) settleTurn(false); swipe = null; return; }
+    const current = swipe, touch = event.touches[0];
+    const dx = touch.clientX - current.x, dy = touch.clientY - current.y;
+    if (!current.direction) {
+      if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { swipe = null; return; }
+      if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
+      const direction = dx < 0 ? 1 : -1;
+      if (page + direction < 0 || page + direction >= window.woodlandMenus[outlet].length) { swipe = null; return; }
+      current.direction = direction;
+      if (!reduceMotion.matches) beginTurn(direction, page + direction);
+    }
+    if (event.cancelable) event.preventDefault();
+    const now = performance.now();
+    current.velocity = (touch.clientX - current.lastX) / Math.max(1, now - current.lastTime);
+    current.lastX = touch.clientX;
+    current.lastTime = now;
+    current.progress = Math.max(0, Math.min(1, -dx * current.direction / current.width));
+    if (activeTurn) {
+      activeTurn.progress = current.progress;
+      if (!dragFrame) dragFrame = requestAnimationFrame(() => { dragFrame = 0; if (activeTurn) paintTurn(activeTurn); });
+    }
+  }, {passive:false});
   function finishSwipe(event) {
     if (!swipe) return;
     const current = swipe;
     swipe = null;
-    current.sheet.classList.remove('is-dragging');
-    current.sheet.style.removeProperty('--drag');
-    if (event.type === 'touchcancel' || !current.dragging || !event.changedTouches.length) return;
-    const dx = event.changedTouches[0].clientX - current.x;
-    if (Math.abs(dx) >= 55) {
-      current.sheet.style.setProperty('--turn-start', (Math.max(-0.8, Math.min(0.8, dx / current.sheet.clientWidth)) * 55) + 'deg');
-      turnPage(dx < 0 ? 1 : -1);
-    }
+    if (!current.direction) return;
+    const freshFlick = performance.now() - current.lastTime < 100 && -current.velocity * current.direction > .45;
+    const commit = event.type !== 'touchcancel' && (current.progress > .26 || (current.progress > .07 && freshFlick));
+    if (activeTurn) settleTurn(commit);
+    else if (commit) turnPage(current.direction);
   }
-  results.addEventListener('touchend', finishSwipe, { passive:true });
-  results.addEventListener('touchcancel', finishSwipe, { passive:true });
+  results.addEventListener('touchend', finishSwipe, {passive:true});
+  results.addEventListener('touchcancel', finishSwipe, {passive:true});
+  window.addEventListener('resize', cancelTurn);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) cancelTurn(); });
+  reduceMotion.addEventListener('change', cancelTurn);
   render();
 })();
