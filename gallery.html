@@ -46,7 +46,7 @@
     @media (max-width: 860px){ .more-gallery__grid { grid-template-columns:repeat(2,1fr); } }
     @media (max-width: 760px){
       .mobile-gallery-video { display:block; order:1; padding:40px 0 0; }
-      .mobile-gallery-video video { width:100%; max-height:75vh; border-radius:var(--radius); background:var(--ink); box-shadow:var(--shadow); }
+      .mobile-gallery-video video { width:100%; max-height:75vh; border-radius:var(--radius); background:var(--ink); box-shadow:var(--shadow); pointer-events:none; }
       .mobile-gallery-video p { margin-top:14px; color:var(--muted); font-size:14px; }
       .mobile-gallery-video--final { order:5; padding:0 0 70px; }
     }    @media (max-width: 480px){ .more-gallery__grid { gap:8px; } }
@@ -97,7 +97,7 @@
     </section>
     <section class="mobile-gallery-video" aria-label="Woodland Affairs video">
       <div class="wrap">
-        <video controls autoplay muted loop playsinline preload="metadata" poster="images/amb-hari-tables.jpg" aria-label="Woodland Affairs gallery video">
+        <video autoplay muted loop playsinline preload="metadata" poster="images/amb-hari-tables.jpg" aria-label="Woodland Affairs gallery video">
           <source src="hero-video.mp4" type="video/mp4" media="(max-width: 760px)" />
         </video>
         <p>A glimpse of Woodland Affairs in motion.</p>
@@ -440,7 +440,7 @@
     </section>
     <section class="mobile-gallery-video mobile-gallery-video--final" aria-label="Eatery Royale video">
       <div class="wrap">
-        <video controls autoplay muted loop playsinline preload="metadata" poster="images/wa-janakpuri.jpg" aria-label="Eatery Royale video">
+        <video autoplay muted loop playsinline preload="metadata" poster="images/wa-janakpuri.jpg" aria-label="Eatery Royale video">
           <source src="eatery-royale.mp4" type="video/mp4" media="(max-width: 760px)" />
         </video>
         <p>Step inside Eatery Royale.</p>
