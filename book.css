@@ -117,3 +117,8 @@
   .notebook__inside p { font-size:10px; line-height:1.6; }
 }
 
+
+/* Smooth page faces; retain the dark menu and photographic cover. */
+.notebook{touch-action:pan-y pinch-zoom}
+.book-turn-layer{position:absolute;z-index:5;pointer-events:none;perspective:1600px;background:#14251d;overflow:hidden}
+.book-turn-layer .book-turn-face{position:absolute;inset:0;width:100%;height:100%;box-sizing:border-box;overflow:hidden;margin:0;transform-origin:center center;backface-visibility:hidden;-webkit-backface-visibility:hidden;transition:none;will-change:transform,opacity}
